@@ -247,7 +247,6 @@ class PrivacyGlassesPlugin extends obsidian.Plugin {
         });
     }
     shouldRevealLeaf(view) {
-        var _a;
         if (this.currentLevel === Level.RevealAll) {
             return true;
         }
@@ -258,26 +257,37 @@ class PrivacyGlassesPlugin extends obsidian.Plugin {
         if (!isMarkdownFileInfoView(view)) {
             return true;
         }
-        if (view.editor &&
-            this.settings.privateNoteMarker &&
-            this.settings.privateNoteMarker !== "") {
+
+        if (view.editor && this.settings.privateNoteMarker &&
+            this.settings.privateNoteMarker !== "" && view.file) {
             let tags = [];
-            // Get tags in the note body, if any
-            if ('tags' in this.app.metadataCache.getFileCache(view.file)) {
-                tags.push(...this.app.metadataCache.getFileCache(view.file).tags.filter(x => !!x.tag).map(x => x.tag));
-            }
-            // Get tags in properties, if any
-            if ('tags' in ((_a = this.app.metadataCache.getFileCache(view.file)) === null || _a === void 0 ? void 0 : _a.frontmatter)) {
-                tags.push(...this.app.metadataCache.getFileCache(view.file).frontmatter.tags.filter((x) => !!x));
-            }
-            if (tags && tags.length > 0) {
-                return !tags.includes(this.settings.privateNoteMarker);
+            const fileCache = this.app.metadataCache.getFileCache(view.file);
+
+            // Safely check tags in file cache
+            if (fileCache) {
+                // Check tags in note body
+                if (fileCache.tags) {
+                    tags.push(...fileCache.tags.filter(x => !!x.tag).map(x => x.tag));
+                }
+
+                // Check tags in frontmatter
+               if (fileCache.frontmatter && fileCache.frontmatter.tags) {
+                    const fmTags = Array.isArray(fileCache.frontmatter.tags) 
+                        ? fileCache.frontmatter.tags 
+                        : [fileCache.frontmatter.tags];
+                    tags.push(...fmTags.filter(x => !!x));
+                }
+
+                if (tags.length > 0) {
+                    return !tags.includes(this.settings.privateNoteMarker);
+                }
             }
         }
-        if (view.file &&
-            !this.settings.privateDirs.contains(view.file.parent.path)) {
+
+        if (view.file && !this.settings.privateDirs.contains(view.file.parent.path)) {
             return true;
         }
+        
         return false;
     }
     updateLeafViewStyle(view) {
